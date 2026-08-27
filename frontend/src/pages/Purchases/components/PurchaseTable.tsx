@@ -1,19 +1,13 @@
 import DataTable from "../../../components/table/DataTable";
 
 interface Props {
-
   rows: any[];
-
   onView: (row: any) => void;
-
 }
 
 export default function PurchaseTable({
-
   rows,
-
   onView,
-
 }: Props) {
 
   const columns = [
@@ -49,43 +43,14 @@ export default function PurchaseTable({
         `Bs ${Number(row.total).toFixed(2)}`,
     },
 
-    {
-      field: "view",
-      headerName: "Detalle",
-
-      render: (row: any) => (
-
-        <button
-          type="button"
-          onClick={(e) => {
-
-            e.preventDefault();
-
-            e.stopPropagation();
-
-            onView(row);
-
-          }}
-        >
-
-          Ver
-
-        </button>
-
-      ),
-
-    },
-
   ];
 
   return (
 
     <DataTable
-
       columns={columns}
-
       rows={rows}
-
+      onView={onView}
     />
 
   );

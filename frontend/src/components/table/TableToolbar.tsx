@@ -6,7 +6,7 @@ import {
 
 interface Props {
   title: string;
-  onNew: () => void;
+  onNew?: () => void;
   search: string;
   onSearchChange: (
     value: string,
@@ -40,12 +40,14 @@ export default function TableToolbar({
         }}
       />
 
-      <Button
-        variant="contained"
-        onClick={onNew}
-      >
-        Nuevo
-      </Button>
+      {onNew && (
+        <Button
+          variant="contained"
+          onClick={onNew}
+        >
+          Nuevo
+        </Button>
+      )}
 
     </Stack>
 

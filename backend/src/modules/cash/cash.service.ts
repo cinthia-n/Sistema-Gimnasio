@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -45,7 +45,19 @@ export class CashService {
     },
         tx?: PrismaTransaction,
     ) {
-    const prisma = tx ?? this.prisma;
+        const prisma = tx ?? this.prisma;
+
+        if (data.paymentMethod === PaymentMethod.CASH) {
+            const opened = await prisma.cashClosing.findFirst({
+                where: { status: "OPEN" },
+            });
+
+          if (!opened) {
+              throw new BadRequestException(
+                  "Debe abrir la caja antes de registrar transacciones en efectivo.",
+              );
+          }
+      }
 
     return prisma.cashMovement.create({
         data: {
@@ -68,7 +80,18 @@ export class CashService {
         tx?: PrismaTransaction,
     ) {
         const prisma = tx ?? this.prisma;
+        
+        if (data.paymentMethod === PaymentMethod.CASH) {
+        const opened = await prisma.cashClosing.findFirst({
+            where: { status: "OPEN" },
+        });
 
+        if (!opened) {
+            throw new BadRequestException(
+                "Debe abrir la caja antes de registrar transacciones en efectivo.",
+            );
+        }
+    }
     return prisma.cashMovement.create({
         data: {
         type: CashMovementType.EXPENSE,
@@ -90,10 +113,7 @@ export class CashService {
 
     if (opened) {
 
-      throw new Error(
-        "Ya existe una caja abierta.",
-      );
-
+      throw new BadRequestException("Ya existe una caja abierta.");
     }
 
     return this.prisma.cashClosing.create({
@@ -125,10 +145,7 @@ export class CashService {
 
     if (!cash) {
 
-      throw new Error(
-        "No existe una caja abierta.",
-      );
-
+      throw new BadRequestException("No existe una caja abierta.");
     }
 
     const movements =
@@ -212,10 +229,7 @@ export class CashService {
 
     if (!cash) {
 
-      throw new Error(
-        "No existe una caja abierta.",
-      );
-
+      throw new BadRequestException("No existe una caja abierta.");
     }
 
     const movements =

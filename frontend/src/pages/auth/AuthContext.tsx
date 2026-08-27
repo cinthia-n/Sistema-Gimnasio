@@ -18,6 +18,8 @@ interface User {
   username: string;
   fullName: string;
   role: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
 }
 
 interface AuthContextType {

@@ -130,6 +130,8 @@ export default function SupplierForm({
                 }
 
                 fullWidth
+                translate="no"
+                inputProps={{traslate: "no"}}
 
             />
 

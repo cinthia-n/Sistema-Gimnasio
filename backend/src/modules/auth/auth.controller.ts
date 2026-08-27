@@ -5,6 +5,7 @@ import {
   Post,
   Req,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 
 import { UserRole } from '@prisma/client';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
 import { Roles } from './decorators/roles.decorator';
+import { ChangePasswordDto } from './dto/change-passord.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,10 +34,10 @@ export class AuthController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req: any) {
-    return req.user;
+  @UseGuards(JwtAuthGuard)
+  me(@Req() req: any) {
+    return this.authService.getProfile(req.user.sub);
   }
 
   @UseGuards(
@@ -65,5 +67,17 @@ export class AuthController {
       message:
         'Acceso autorizado para ADMIN o EMPLOYEE',
     };
+  }
+
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  changePassword(
+    @Req() req: any,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      req.user.sub,
+      dto,
+    );
   }
 }

@@ -24,6 +24,7 @@ import { useClients } from '../../../hooks/useClients';
 import { getServices } from '../../../services/service.service';
 import { getServicePrices } from '../../../services/service-price.service';
 import { getPromotions } from '../../../services/promotion.service';
+import { useAuth } from '../../auth/AuthContext';
 
 import type { RegisterEnrollmentDto } from '../../../services/enrollment.service';
 

@@ -67,7 +67,7 @@ export default function ProductForm({
             [field]:
                 field === "name"
                     ? newValue
-                    : Number(newValue),
+                    : newValue === "" ? 0 : Number(newValue),
 
         });
 
@@ -234,7 +234,7 @@ export default function ProductForm({
                     fullWidth
                     label="Precio de compra"
                     type="number"
-                    value={value.purchasePrice}
+                    value={value.purchasePrice === 0 ? '': value.purchasePrice}
                     onChange={(e) =>
                         handleChange(
                             "purchasePrice",
@@ -429,7 +429,7 @@ export default function ProductForm({
                     fullWidth
                     label="Stock mínimo"
                     type="number"
-                    value={value.minimumStock}
+                    value={value.minimumStock === 0 ? '' : value.minimumStock}
                     onChange={(e) =>
                         handleChange(
                             "minimumStock",

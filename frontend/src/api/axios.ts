@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { getToken } from '../pages/auth/storage';
+import { getToken, removeToken, removeUser } from '../pages/auth/storage';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000',
@@ -20,5 +20,23 @@ api.interceptors.request.use((config) => {
   return config;
 
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+
+    if (error.response?.status === 401) {
+
+      removeToken();
+      removeUser();
+
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export default api;

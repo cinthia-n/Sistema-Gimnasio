@@ -1,99 +1,48 @@
 import api from "../api/axios";
 
 export interface ServiceDto {
-
-    code: string;
-
-    name: string;
-
-    description?: string;
-
-    type: string;
-
-    durationDays: number;
-
-    basePrice: number;
-
+  name: string;
+  description?: string;
+  type: string;
+  durationDays: number;
+  basePrice: number | string;
+  studentPrice?: number | null;
 }
 
 export async function getServices() {
+  const { data } = await api.get("/services");
 
-    const { data } = await api.get(
-
-        "/services",
-
-    );
-
-    return data;
-
+  return data;
 }
 
-export async function getService(
+export async function getService(id: number) {
+  const { data } = await api.get(`/services/${id}`);
 
-    id: number,
-
-) {
-
-    const { data } = await api.get(
-
-        `/services/${id}`,
-
-    );
-
-    return data;
-
+  return data;
 }
 
-export async function createService(
+export async function createService(dto: ServiceDto) {
+  const { data } = await api.post("/services", dto);
 
-    dto: ServiceDto,
-
-) {
-
-    const { data } = await api.post(
-
-        "/services",
-
-        dto,
-
-    );
-
-    return data;
-
+  return data;
 }
 
 export async function updateService(
-
-    id: number,
-
-    dto: Partial<ServiceDto>,
-
+  id: number,
+  dto: Partial<ServiceDto>,
 ) {
+  const { data } = await api.patch(
+    `/services/${id}`,
+    dto,
+  );
 
-    const { data } = await api.patch(
-
-        `/services/${id}`,
-
-        dto,
-
-    );
-
-    return data;
-
+  return data;
 }
 
-export async function deleteService(
+export async function deleteService(id: number) {
+  const { data } = await api.delete(
+    `/services/${id}`,
+  );
 
-    id: number,
-
-) {
-
-    const { data } = await api.delete(
-
-        `/services/${id}`,
-
-    );
-
-    return data;
-
+  return data;
 }

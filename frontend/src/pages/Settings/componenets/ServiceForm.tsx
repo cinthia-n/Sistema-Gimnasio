@@ -1,235 +1,195 @@
 import {
-    Grid,
-    MenuItem,
-    TextField,
+  Stack,
+  TextField,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Typography,
 } from "@mui/material";
 
-interface Service {
-
-    code: string;
-
-    name: string;
-
-    description: string;
-
-    type: string;
-
-    durationDays: number;
-
-    basePrice: number;
-
-    studentPrice: number;
-
-}
-
 interface Props {
-
-    value: Service;
-
-    onChange: (value: Service) => void;
-
+  value: any;
+  onChange: (value: any) => void;
 }
 
 export default function ServiceForm({
-
-    value,
-
-    onChange,
-
+  value,
+  onChange,
 }: Props) {
 
-    const handleChange = (
+  const canHaveStudentPrice =
+    value.name === "Mensual" ||
+    value.name === "Grupal";
 
-        field: keyof Service,
+  const hasStudentPrice =
+    value.studentPrice !== null &&
+    value.studentPrice !== undefined &&
+    value.studentPrice !== "";
 
-        newValue: any,
+  
+  return (
+    <Stack spacing={3}>
 
-    ) => {
-
-        onChange({
-
+      <TextField
+        fullWidth
+        label="Nombre"
+        value={value.name || ""}
+        onChange={(e) =>
+          onChange({
             ...value,
+            name: e.target.value,
+          })
+        }
+      />
 
-            [field]:
+      <TextField
+        fullWidth
+        multiline
+        minRows={2}
+        label="Descripción"
+        value={value.description || ""}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            description: e.target.value,
+          })
+        }
+      />
 
-                field === "name" ||
+      <TextField
+        select
+        fullWidth
+        label="Tipo"
+        value={value.type || ""}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            type: e.target.value,
+          })
+        }
+      >
+        <MenuItem value="MEMBERSHIP">
+          Membresía
+        </MenuItem>
 
-                field === "description" ||
+        <MenuItem value="PROGRAM">
+          Programa
+        </MenuItem>
 
-                field === "code" ||
+        <MenuItem value="ADDITIONAL">
+          Adicional
+        </MenuItem>
+      </TextField>
 
-                field === "type"
+      <TextField
+        fullWidth
+        type="number"
+        label="Duración (días)"
+        value={value.durationDays ?? ""}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            durationDays:
+              e.target.value === ""
+                ? ""
+                : Number(e.target.value),
+          })
+        }
+        slotProps={{
+          htmlInput: {
+            min: 1,
+            step: 1,
+          },
+        }}
+      />
 
-                    ? newValue
+      <TextField
+        fullWidth
+        type="number"
+        label="Precio normal"
+        value={value.basePrice ?? ""}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            basePrice:
+              e.target.value === ""
+                ? ""
+                : Number(e.target.value),
+          })
+        }
+        slotProps={{
+          htmlInput: {
+            min: 0,
+            step: "0.01",
+          },
+        }}
+        InputProps={{
+          startAdornment: (
+            <Typography sx={{ mr: 1 }}>
+              Bs
+            </Typography>
+          ),
+        }}
+      />
 
-                    : Number(newValue),
-
-        });
-
-    };
-
-    return (
-
-        <Grid container spacing={2}>
-
-            <Grid size={6}>
-
-                <TextField
-
-                    fullWidth
-
-                    label="Nombre"
-
-                    value={value.name}
-
-                    onChange={(e) =>
-
-                        handleChange(
-
-                            "name",
-
-                            e.target.value,
-
+      {canHaveStudentPrice && (
+        <>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hasStudentPrice}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    studentPrice: e.target.checked
+                      ? (
+                          value.studentPrice !== null &&
+                          value.studentPrice !== undefined &&
+                          value.studentPrice !== ""
+                            ? value.studentPrice
+                            : ""
                         )
-
-                    }
-
-                />
-
-            </Grid>
-
-            <Grid size={12}>
-
-                <TextField
-
-                    fullWidth
-
-                    label="Descripción"
-
-                    value={value.description}
-
-                    onChange={(e) =>
-
-                        handleChange(
-
-                            "description",
-
-                            e.target.value,
-
-                        )
-
-                    }
-
-                />
-
-            </Grid>
-
-            <Grid size={4}>
-
-                <TextField
-
-                    select
-
-                    fullWidth
-
-                    label="Tipo"
-
-                    value={value.type}
-
-                    onChange={(e) =>
-
-                        handleChange(
-
-                            "type",
-
-                            e.target.value,
-
-                        )
-
-                    }
-
-                >
-
-                    <MenuItem value="MEMBERSHIP">
-
-                        Mensual 
-
-                    </MenuItem>
-
-                    <MenuItem value="PROGRAM">
-
-                        Diario
-
-                    </MenuItem>
-
-                    <MenuItem value="ADDITIONAL">
-
-                        Personalizado
-
-                    </MenuItem>
-
-                </TextField>
-
-            </Grid>
-
-            <Grid size={4}>
-
-                <TextField
-
-                    fullWidth
-
-                    type="number"
-
-                    label="Duración"
-
-                    value={value.durationDays}
-
-                    onChange={(e) =>
-
-                        handleChange(
-
-                            "durationDays",
-
-                            e.target.value,
-
-                        )
-
-                    }
-
-                />
-
-            </Grid>
-
-            <Grid size={4}>
-
-                <TextField
-
-                    fullWidth
-
-                    type="number"
-
-                    label="Precio"
-
-                    value={value.basePrice}
-
-                    onChange={(e) =>
-
-                        handleChange(
-
-                            "basePrice",
-
-                            e.target.value,
-
-                        )
-
-                    }
-
-                />
-
-            </Grid>
-
-        </Grid>
-
-    );
-
+                      : null,
+                  })
+                }
+              />
+            }
+            label="Tiene precio preferencial para estudiantes de colegio"
+          />
+
+          {hasStudentPrice && (
+            <TextField
+              fullWidth
+              type="number"
+              label="Precio estudiante colegio"
+              value={value.studentPrice ?? ""}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  studentPrice:
+                    e.target.value === ""
+                      ? ""
+                      : Number(e.target.value),
+                })
+              }
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                  step: "0.01",
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <Typography sx={{ mr: 1 }}>
+                    Bs
+                  </Typography>
+                ),
+              }}
+            />
+          )}
+        </>
+      )}
+
+    </Stack>
+  );
 }

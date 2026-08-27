@@ -24,6 +24,11 @@ import SuppliersPage from '../pages/Suppliers/SuppliersPage';
 import PurchasesPage from '../pages/Purchases/PurchasesPage';
 import ReportsPage from '../pages/Reports/ReportsPage';
 import SettingsPage from '../pages/Settings/SettingsPage';
+import ChangePasswordPage from '../pages/auth/ChangePasswordPage';
+import RequirePasswordChange from '../pages/auth/RequirePasswordCgange';
+import UsersPage from '../pages/users/UsersPage';
+import AdminRoute from '../pages/auth/AdminRoute';
+
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -45,7 +50,14 @@ function AppRoutes() {
 
           <Route
             path="/dashboard"
-            element={<DashboardPage />}
+            element={
+              <ProtectedRoute>
+                <RequirePasswordChange>
+                  <DashboardPage />
+                </RequirePasswordChange>
+              </ProtectedRoute>
+              
+            }
           />
           <Route
             path="/clients"
@@ -89,12 +101,38 @@ function AppRoutes() {
 
           <Route
             path="/reports"
-            element={<ReportsPage />}
+            element={
+              <AdminRoute>
+                <ReportsPage />
+              </AdminRoute>
+            }
           />
 
           <Route
             path="/settings"
-            element={<SettingsPage />}
+            element={
+              <AdminRoute>
+                <SettingsPage />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/cambiar-contrasena"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/usuarios"
+            element={
+              <AdminRoute>
+                <UsersPage />
+              </AdminRoute>
+            }
           />
 
 

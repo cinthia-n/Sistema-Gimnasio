@@ -27,6 +27,7 @@ interface PromotionFormValue {
   name: string;
   description: string;
   price: number;
+  durationDays: number;
   startDate: string;
   endDate: string;
 }
@@ -35,6 +36,7 @@ const emptyPromotion: PromotionFormValue = {
   name: "",
   description: "",
   price: 0,
+  durationDays: 30,
   startDate: "",
   endDate: "",
 };
@@ -87,6 +89,7 @@ export default function PromotionsSettings() {
         row.price !== undefined
           ? Number(row.price)
           : 0,
+      durationDays: row.durationDays ?? 30,
       startDate:
         row.startDate
           ? row.startDate.substring(0, 10)
@@ -103,80 +106,57 @@ export default function PromotionsSettings() {
   const handleSave = async () => {
 
     if (!promotion.name.trim()) {
-      alert("Ingrese el nombre de la promoción");
-      return;
+        alert("Ingrese el nombre de la promoción");
+        return;
+    }
+
+    if (!promotion.durationDays || promotion.durationDays <= 0) {
+        alert("Ingrese la duración de la membresía en días");
+        return;
     }
 
     if (!promotion.startDate) {
-      alert("Ingrese la fecha de inicio");
-      return;
+        alert("Ingrese la fecha de inicio");
+        return;
     }
 
     if (!promotion.endDate) {
-      alert("Ingrese la fecha de fin");
-      return;
+        alert("Ingrese la fecha de fin");
+        return;
     }
 
-    if (
-      promotion.endDate <
-      promotion.startDate
-    ) {
-      alert(
-        "La fecha de fin no puede ser anterior a la fecha de inicio",
-      );
-      return;
+    if (promotion.endDate < promotion.startDate) {
+        alert("La fecha de fin no puede ser anterior a la fecha de inicio");
+        return;
     }
 
     try {
 
-      const dto = {
-        name: promotion.name,
-        description:
-          promotion.description || undefined,
-        price:
-          promotion.price > 0
-            ? promotion.price
-            : undefined,
-        startDate:
-          promotion.startDate,
-        endDate:
-          promotion.endDate,
-      };
+        const dto = {
+            name: promotion.name,
+            description: promotion.description || undefined,
+            price: promotion.price > 0 ? promotion.price : undefined,
+            durationDays: promotion.durationDays,
+            startDate: promotion.startDate,
+            endDate: promotion.endDate,
+        };
 
-      if (editingId) {
+        if (editingId) {
+            await updatePromotion.mutateAsync({ id: editingId, dto });
+        } else {
+            await createPromotion.mutateAsync(dto);
+        }
 
-        await updatePromotion.mutateAsync({
-          id: editingId,
-          dto,
-        });
-
-      } else {
-
-        await createPromotion.mutateAsync(
-          dto,
-        );
-
-      }
-
-      setOpen(false);
-
-      setEditingId(null);
-
-      setPromotion({
-        ...emptyPromotion,
-      });
+        setOpen(false);
+        setEditingId(null);
+        setPromotion({ ...emptyPromotion });
 
     } catch (error) {
-
-      console.error(error);
-
-      alert(
-        "No se pudo guardar la promoción",
-      );
-
+        console.error(error);
+        alert("No se pudo guardar la promoción");
     }
 
-  };
+};
 
   const handleToggle = async (
     row: any,

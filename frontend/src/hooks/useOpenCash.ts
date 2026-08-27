@@ -20,7 +20,7 @@ export function useOpenCash() {
 
             queryClient.invalidateQueries({
 
-                queryKey: ["cash"],
+                queryKey: ["current-cash"],
 
             });
 

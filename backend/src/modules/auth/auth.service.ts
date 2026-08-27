@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-
+import { ChangePasswordDto } from './dto/change-passord.dto';
 import * as bcrypt from 'bcrypt';
-
+import { BadRequestException } from '@nestjs/common';
 @Injectable()
 export class AuthService {
   constructor(
@@ -18,20 +18,18 @@ export class AuthService {
       },
     });
 
-    console.log('Usuario encontrado:', user);
-
     if (!user) {
       throw new UnauthorizedException('Usuario o contraseña incorrectos');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuario desactivado. Contacte al administrador.');
     }
 
     const passwordMatch = await bcrypt.compare(
       password,
       user.password,
     );
-
-    console.log('Password recibida:', password);
-    console.log('Hash BD:', user?.password);
-    console.log('Coinciden:', passwordMatch);
 
     if (!passwordMatch) {
       throw new UnauthorizedException('Usuario o contraseña incorrectos');
@@ -50,7 +48,89 @@ export class AuthService {
         username: user.username,
         fullName: user.fullName,
         role: user.role,
+        isActive: user.isActive,
+        mustChangePassword: user.mustChangePassword,
       },
+    };
+  }   
+
+
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'Usuario no encontrado',
+      );
+    }
+
+    return user;
+  }
+
+  async changePassword(
+    userId: number,
+    dto: ChangePasswordDto,
+  ) {
+    if(!userId){
+      throw new UnauthorizedException(
+        'Nose pudo identificar al usuario autenticado'
+      );
+    }
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'Usuario no encontrado',
+      );
+    }
+
+    const passwordMatch = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
+
+    if (!passwordMatch) {
+      throw new UnauthorizedException(
+        'La contraseña actual es incorrecta',
+      );
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'La nueva contraseña debe ser diferente',
+      );
+    }
+
+    const newPasswordHash = await bcrypt.hash(
+      dto.newPassword,
+      10,
+    );
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        password: newPasswordHash,
+      },
+    });
+
+    return {
+      message: 'Contraseña actualizada correctamente',
     };
   }
 }

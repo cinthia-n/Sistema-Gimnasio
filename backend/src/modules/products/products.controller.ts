@@ -8,12 +8,19 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 
 import { ProductsService } from './products.service';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('products')
 export class ProductsController {
@@ -22,10 +29,12 @@ export class ProductsController {
   ) {}
 
   //---------------------------------------
-  // Crear
+  // Crear (solo ADMIN)
   //---------------------------------------
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   create(
     @Body() dto: CreateProductDto,
   ) {
@@ -33,7 +42,7 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Listado
+  // Listado (todos los roles)
   //---------------------------------------
 
   @Get()
@@ -44,7 +53,7 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Productos disponibles para venta
+  // Productos disponibles para venta (todos los roles)
   //---------------------------------------
 
   @Get('available')
@@ -53,7 +62,7 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Productos con bajo stock
+  // Productos con bajo stock (todos los roles)
   //---------------------------------------
 
   @Get('low-stock')
@@ -62,7 +71,7 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Productos por proveedor
+  // Productos por proveedor (todos los roles)
   //---------------------------------------
 
   @Get('supplier/:id')
@@ -73,7 +82,7 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Buscar por ID
+  // Buscar por ID (todos los roles)
   //---------------------------------------
 
   @Get(':id')
@@ -84,10 +93,12 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Editar
+  // Editar (solo ADMIN)
   //---------------------------------------
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,
@@ -96,10 +107,12 @@ export class ProductsController {
   }
 
   //---------------------------------------
-  // Eliminar lógico
+  // Eliminar lógico (solo ADMIN)
   //---------------------------------------
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   remove(
     @Param('id', ParseIntPipe) id: number,
   ) {

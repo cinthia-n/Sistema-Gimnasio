@@ -16,11 +16,11 @@ export function useCloseCash() {
             });
 
             queryClient.invalidateQueries({
-                queryKey: ["cash"],
+                queryKey: ["current-cash"],
             });
 
             queryClient.invalidateQueries({
-                queryKey: ["current-cash"],
+                queryKey: ["cash-history"],
             });
 
         },

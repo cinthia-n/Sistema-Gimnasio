@@ -4,6 +4,7 @@ export interface PromotionDto {
   name: string;
   description?: string;
   price?: number;
+  durationDays: number;
   startDate: string;
   endDate: string;
   active?: boolean;

@@ -1,6 +1,7 @@
 
 import { useState, useRef } from 'react';
-
+import { useNotification } from '../../context/NotificationContext';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 
@@ -32,6 +33,9 @@ export default function EnrollmentsPage() {
     data = [],
   } = useEnrollments();
 
+  const { showSuccess, showError } = useNotification();
+
+
   const createEnrollment =
     useCreateEnrollment();
 
@@ -49,22 +53,11 @@ export default function EnrollmentsPage() {
 
     try {
       await createEnrollment.mutateAsync(dto);
-
-      alert(
-        'Inscripción registrada correctamente',
-      );
-
+      showSuccess('Inscripción registrada correctamente');
       setOpen(false);
-
     } catch (error) {
-      console.error(
-        'Error al registrar inscripción:',
-        error,
-      );
-
-      alert(
-        'Error al registrar la inscripción',
-      );
+      console.error('Error al registrar inscripción:', error);
+      showError(getErrorMessage(error, 'Error al registrar la inscripción'));
     }
   };
 

@@ -88,129 +88,50 @@ export default function ServicesSettings() {
     };
 
     const handleSave = async () => {
+    try {
+        let savedService;
 
-        try {
-
-            let savedService;
-
-            if (editingId) {
-
-                savedService =
-                    await updateService.mutateAsync({
-
-                        id: editingId,
-
-                        dto: {
-                            code: service.code,
-                            name: service.name,
-                            description: service.description,
-                            type: service.type,
-                            durationDays: service.durationDays,
-                            basePrice: service.basePrice,
-                        },
-
-                    });
-
-            } else {
-
-                savedService =
-                    await createService.mutateAsync({
-
-                        code: service.code,
-                        name: service.name,
-                        description: service.description,
-                        type: service.type,
-                        durationDays: service.durationDays,
-                        basePrice: service.basePrice,
-
-                    });
-
-            }
-
-            const serviceId =
-                editingId ??
-                savedService.id;
-
-            // Solo Mensual y Grupal manejan
-            // precio especial para estudiantes.
-            const hasStudentPrice =
-                service.code === "MONTHLY" ||
-                service.code === "GROUP";
-
-            if (hasStudentPrice) {
-
-                const existingStudentPrice =
-                    servicePrices.find(
-                        (item: any) =>
-                            Number(item.serviceId) === Number(serviceId) &&
-                            item.isStudent === true,
-                    );
-
-                const studentPrice =
-                    Number(service.studentPrice);
-
-                if (studentPrice > 0) {
-
-                    if (existingStudentPrice) {
-
-                        await updateServicePrice.mutateAsync({
-
-                            id: existingStudentPrice.id,
-
-                            dto: {
-                                serviceId,
-                                isStudent: true,
-                                price: studentPrice,
-                            },
-
-                        });
-
-                    } else {
-
-                        await createServicePrice.mutateAsync({
-
-                            serviceId,
-
-                            isStudent: true,
-
-                            price: studentPrice,
-
-                        });
-
-                    }
-
-                }
-
-            }
-
-            setEditingId(null);
-
-            setOpen(false);
-
-            setService({
-
-                code: "",
-                name: "",
-                description: "",
-                type: "MONTHLY",
-                durationDays: 30,
-                basePrice: 0,
-                studentPrice: 0,
-
+        if (editingId) {
+            savedService = await updateService.mutateAsync({
+            id: editingId,
+            dto: {
+                name: service.name,
+                description: service.description,
+                type: service.type,
+                durationDays: service.durationDays,
+                basePrice: Number(service.basePrice),
+            },
+        });
+        } else {
+            savedService = await createService.mutateAsync({
+                name: service.name,
+                description: service.description,
+                type: service.type,
+                durationDays: service.durationDays,
+                basePrice: Number(service.basePrice),
             });
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(
-                "No se pudo guardar el servicio",
-            );
-
         }
 
-    };
+        setEditingId(null);
+        setOpen(false);
 
+        setService({
+            code: "",
+            name: "",
+            description: "",
+            type: "MEMBERSHIP",
+            durationDays: 30,
+            basePrice: 0,
+            studentPrice: 0,
+        });
+
+    } catch (error) {
+        console.error(error);
+
+      alert("No se pudo guardar el servicio");
+    }
+    };
+    
     const handleEdit = (row: any) => {
 
         setEditingId(row.id);
@@ -399,8 +320,8 @@ export default function ServicesSettings() {
             render: (row: any) => {
 
                 const hasStudentPrice =
-                    row.code === "MONTHLY" ||
-                    row.code === "GROUP";
+                    row.code === "MENSUAL" ||
+                    row.code === "GRUPAL";
 
                 if (!hasStudentPrice) {
                     return "—";

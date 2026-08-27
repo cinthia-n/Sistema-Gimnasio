@@ -266,7 +266,7 @@ export default function CashPage() {
 
             </Typography>
 
-            {summary ? (
+            {currentCash ? (
 
                 <Button
 
