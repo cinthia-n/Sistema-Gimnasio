@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import { getErrorMessage } from '../../utils/getErrorMessage';
@@ -10,6 +9,11 @@ import DataTable from '../../components/table/DataTable';
 import FormDialog from '../../components/common/FormDialog';
 
 import EnrollmentForm from './components/EnrollmentForm';
+
+import { useCancelEnrollment } from "../../hooks/useCancelEnrollment";
+import CancelActionDialog from "../../components/common/CancelActionDialog";
+import { useAuth } from "../auth/AuthContext";
+import { toast } from "react-toastify"; // o useNotification, según cuál uses en este archivo
 
 import type {
   EnrollmentFormRef,
@@ -59,7 +63,7 @@ export default function EnrollmentsPage() {
       console.error('Error al registrar inscripción:', error);
       showError(getErrorMessage(error, 'Error al registrar la inscripción'));
     }
-  };
+  }; 
 
   //--------------------------------------------------
   // Columnas
@@ -143,6 +147,8 @@ export default function EnrollmentsPage() {
         'Cliente no disponible';
 
       return {
+
+        id: item.id,
         membershipCode:
           item.membershipCode,
 
@@ -184,18 +190,18 @@ export default function EnrollmentsPage() {
         status: (
           <Chip
             label={
-              Number(
-                item.balanceDue ?? 0,
-              ) === 0
-                ? 'Pagado'
-                : 'Saldo pendiente'
+              item.status === 'CANCELLED'
+                ? 'Anulada'
+                : Number(item.balanceDue ?? 0) === 0
+                    ? 'Pagado'
+                    : 'Saldo pendiente'
             }
             color={
-              Number(
-                item.balanceDue ?? 0,
-              ) === 0
-                ? 'success'
-                : 'warning'
+              item.status === 'CANCELLED'
+                ? 'default'
+                : Number(item.balanceDue ?? 0) === 0
+                    ? 'success'
+                    : 'warning'
             }
             size="small"
           />
@@ -228,6 +234,55 @@ export default function EnrollmentsPage() {
       );
     });
 
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
+
+  const cancelEnrollment = useCancelEnrollment();
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [enrollmentToCancel, setEnrollmentToCancel] = useState<number | null>(null);
+
+  const handleCancelEnrollment = async (reason: string) => {
+
+    if (!enrollmentToCancel) return;
+
+    try {
+
+        await cancelEnrollment.mutateAsync({ id: enrollmentToCancel, reason });
+
+        toast.success("Inscripción anulada correctamente");
+
+        setCancelDialogOpen(false);
+        setEnrollmentToCancel(null);
+
+    } catch (error) {
+
+        console.error(error);
+        toast.error(getErrorMessage(error, "No se pudo anular la inscripción"));
+
+    }
+
+  }; 
+  
+  const canCancel = (enrollment: any) => {
+
+    if (isAdmin) return true;
+
+    const registeredByUser = enrollment.payments?.some(
+        (p: any) => p.userId === user?.id,
+    );
+
+    if (!registeredByUser) return false;
+
+    const created = new Date(enrollment.createdAt);
+    const today = new Date();
+
+    return (
+        created.getFullYear() === today.getFullYear() &&
+        created.getMonth() === today.getMonth() &&
+        created.getDate() === today.getDate()
+    );
+  };
   //--------------------------------------------------
   // Render
   //--------------------------------------------------
@@ -251,6 +306,23 @@ export default function EnrollmentsPage() {
       <DataTable
         columns={columns}
         rows={rows}
+        onCancel={(row: any) => {
+
+            const enrollment = data.find((e: any) => e.id === row.id);
+
+            if (enrollment?.status === 'CANCELLED') {
+                showError("Esta inscripción ya fue anulada");
+                return;
+            }
+
+            if (!canCancel(enrollment)) {
+                showError("Solo puede anular inscripciones que usted registró el día de hoy");
+                return;
+            }
+
+            setEnrollmentToCancel(row.id);
+            setCancelDialogOpen(true);
+        }}
       />
 
       <FormDialog
@@ -263,6 +335,17 @@ export default function EnrollmentsPage() {
           ref={formRef}
         />
       </FormDialog>
+
+      <CancelActionDialog
+        open={cancelDialogOpen}
+        title={`Anular Inscripción`}
+        description="Esta acción revertirá los pagos registrados para esta inscripción."
+        onClose={() => {
+            setCancelDialogOpen(false);
+            setEnrollmentToCancel(null);
+        }}
+        onConfirm={handleCancelEnrollment}
+      />
     </>
   );
 }

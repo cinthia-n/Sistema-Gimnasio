@@ -9,13 +9,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 
 import { FinancialService } from '../financial/financial.service';
-
+import { CashService } from '../cash/cash.service';
+import { isSameDay } from '../../common/date.util';
+import { ForbiddenException } from '@nestjs/common';
 @Injectable()
 export class PurchasesService {
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialService: FinancialService,
+    private readonly cashService: CashService,
   ) {}
 
   async create(
@@ -267,6 +270,79 @@ export class PurchasesService {
   console.log("--- FIN DIAGNÓSTICO ---");
   return []; // Rompe el bucle temporalmente para que no caliente la CPU
 }*/
+
+  async cancel(id: number, cancelledById: number, cancelledByRole: string, reason: string) {
+
+    if (!reason?.trim()) {
+        throw new BadRequestException('Debe indicar el motivo de la anulación');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+
+        const purchase = await tx.purchase.findUnique({
+            where: { id },
+            include: { details: true },
+        });
+
+        if (!purchase) {
+            throw new NotFoundException('Compra no encontrada');
+        }
+
+        if (purchase.status === 'CANCELLED') {
+            throw new BadRequestException('Esta compra ya fue anulada');
+        }
+
+        if (cancelledByRole !== 'ADMIN') {
+
+            if (purchase.createdById !== cancelledById) {
+                throw new ForbiddenException(
+                    'Solo puede anular sus propias compras, o contactar al administrador',
+                );
+            }
+
+            if (!isSameDay(purchase.purchaseDate)) {
+                throw new ForbiddenException(
+                    'Solo puede anular compras del día de hoy, o contactar al administrador',
+                );
+            }
+        }
+
+        // 1. Revertir stock (la compra lo había AUMENTADO, así que ahora se resta)
+        for (const detail of purchase.details) {
+            await tx.product.update({
+                where: { id: detail.productId },
+                data: { stock: { decrement: detail.quantity } },
+            });
+        }
+
+        // 2. Revertir el egreso original con un INGRESO compensatorio, en la fecha de HOY
+        if (purchase.paymentMethod) {
+
+            await this.cashService.registerIncome({
+                concept: `Anulación Compra #${purchase.id} - ${reason}`,
+                amount: Number(purchase.total),
+                paymentMethod: purchase.paymentMethod,
+                referenceType: 'PURCHASE_REVERSAL',
+                referenceId: purchase.id,
+                createdById: cancelledById,
+            }, tx);
+
+        }
+
+        // 3. Marcar como anulada
+        return tx.purchase.update({
+            where: { id },
+            data: {
+                status: 'CANCELLED',
+                cancelReason: reason,
+                cancelledById,
+                cancelledAt: new Date(),
+            },
+        });
+
+    });
+
+  }
 
 
   async findOne(id: number) {

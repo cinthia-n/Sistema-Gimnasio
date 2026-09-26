@@ -12,6 +12,7 @@ import { CashService } from '../cash/cash.service';
 import { CashReferenceType } from '@prisma/client';
 
 import { FinancialService } from '../financial/financial.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class PaymentsService {
@@ -25,156 +26,70 @@ async registerPayment(dto: RegisterPaymentDto) {
 
   return this.prisma.$transaction(async (tx) => {
 
-    //-----------------------------------------
-    // Buscar inscripción
-    //-----------------------------------------
-
-    const enrollment =
-      await tx.clientService.findUnique({
-
-        where: {
-          id: dto.clientServiceId,
-        },
-
-      });
-
-    if (!enrollment) {
-
-      throw new Error(
-        'Inscripción no encontrada',
-      );
-
-    }
-
-  //-----------------------------------------
-  // Verificar que exista saldo pendiente
-  //-----------------------------------------
-
-    if (Number(enrollment.balanceDue) <= 0) {
-
-      throw new Error(
-        'Esta inscripción ya fue pagada completamente',
-      );
-
-    }
-
-  //-----------------------------------------
-  // Validar monto
-  //-----------------------------------------
-
-    if (dto.amount <= 0) {
-
-      throw new Error(
-          'El monto debe ser mayor a cero',
-      );
-
-    }
-
-
-  //-----------------------------------------
-  // Validar saldo pendiente
-  //-----------------------------------------
-
-    if (Number(dto.amount)>Number(enrollment.balanceDue)) {
-
-      throw new Error(
-          `El pago excede el saldo pendiente de Bs ${Number(enrollment.balanceDue)}`
-      );
-
-    }
-
-
-    //-----------------------------------------
-    // Registrar pago
-    //-----------------------------------------
-
-    const payment =
-      await tx.payment.create({
-
-        data: {
-
-          clientServiceId: dto.clientServiceId,
-
-          amount: dto.amount,
-
-          paymentMethod: dto.paymentMethod,
-
-          userId: dto.userId,
-
-          reference: dto.reference,
-
-        },
-
-      });
-
-    //-----------------------------------------
-    // Calcular nuevos montos
-    //-----------------------------------------
-
-    const paidAmount =
-      Number(enrollment.paidAmount) +
-      Number(dto.amount);
-
-    const balanceDue =
-      Math.max(
-        Number(enrollment.finalPrice) - paidAmount,
-        0,
-      );
-
-    //-----------------------------------------
-    // Actualizar inscripción
-    //-----------------------------------------
-
-    const updatedEnrollment =
-      await tx.clientService.update({
-
-        where: {
-          id: enrollment.id,
-        },
-
-        data: {
-
-          paidAmount,
-
-          balanceDue,
-
-        },
-
-        include: {
-
-          client: true,
-
-          service: true,
-
-          promotion: true,
-
-          payments: true,
-
-        },
-
-      });
-
-    //-----------------------------------------
-    // Registrar movimiento financiero
-    //-----------------------------------------
-
-    await this.financialService.registerMembershipPayment({
-
-      membershipCode: enrollment.membershipCode,
-
-      amount: Number(payment.amount),
-
-      paymentMethod: payment.paymentMethod,
-
-      paymentId: payment.id,
-
-      userId: payment.userId,
-
+    const enrollment = await tx.clientService.findUnique({
+        where: { id: dto.clientServiceId },
     });
 
-    //-----------------------------------------
-    // Retornar inscripción actualizada
-    //-----------------------------------------
+    if (!enrollment) {
+        throw new NotFoundException('Inscripción no encontrada');
+    }
+
+    if (Number(enrollment.balanceDue) <= 0) {
+        throw new BadRequestException('Esta inscripción ya fue pagada completamente');
+    }
+
+    if (!dto.payments?.length) {
+        throw new BadRequestException('Debe registrar al menos un pago');
+    }
+
+    const totalAmount = dto.payments.reduce(
+        (sum, p) => sum + Number(p.amount),
+        0,
+    );
+
+    if (totalAmount <= 0) {
+        throw new BadRequestException('El monto debe ser mayor a cero');
+    }
+
+    if (totalAmount > Number(enrollment.balanceDue)) {
+        throw new BadRequestException(
+            `El pago excede el saldo pendiente de Bs ${Number(enrollment.balanceDue)}`,
+        );
+    }
+
+    for (const paymentLine of dto.payments) {
+
+        const payment = await tx.payment.create({
+            data: {
+                clientServiceId: dto.clientServiceId,
+                amount: paymentLine.amount,
+                paymentMethod: paymentLine.paymentMethod,
+                userId: dto.userId,
+                reference: paymentLine.reference,
+            },
+        });
+
+        await this.financialService.registerMembershipPayment({
+            membershipCode: enrollment.membershipCode,
+            amount: Number(payment.amount),
+            paymentMethod: payment.paymentMethod,
+            paymentId: payment.id,
+            userId: payment.userId,
+        }, tx);
+    }
+
+    const paidAmount = Number(enrollment.paidAmount) + totalAmount;
+
+    const balanceDue = Math.max(
+        Number(enrollment.finalPrice) - paidAmount,
+        0,
+    );
+
+    const updatedEnrollment = await tx.clientService.update({
+        where: { id: enrollment.id },
+        data: { paidAmount, balanceDue },
+        include: { client: true, service: true, promotion: true, payments: true },
+    });
 
     return updatedEnrollment;
 

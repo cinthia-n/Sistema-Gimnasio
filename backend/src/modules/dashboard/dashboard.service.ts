@@ -28,9 +28,10 @@ export class DashboardService {
     const todayEnrollments = 
       await this.prisma.clientService.count({
         where: {
-          createdAt:{
+          createdAt: {
             gte: today,
-          }
+          },
+          status: { not: "CANCELLED" },
         }
       });
     
@@ -46,6 +47,7 @@ export class DashboardService {
           gte: startToday,
           lte: endToday,
         },
+        status: { not: "CANCELLED" },
       },
     });
 
@@ -61,6 +63,7 @@ export class DashboardService {
           gte: startToday,
           lte: endToday,
         },
+        status: { not: "CANCELLED"},
       },
     });
 

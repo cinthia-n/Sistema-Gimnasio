@@ -6,6 +6,7 @@ import CashMovementsTable from "./components/CashMovementsTable";
 
 import { useState } from "react";
 import CashDetailDialog from "./components/CashDetailDialog";
+import { useAuth } from "../auth/AuthContext";
 
 import {
 
@@ -56,6 +57,8 @@ export default function CashPage() {
     const [openDialog, setOpenDialog] = useState(false);
 
     const [closeDialog, setCloseDialog] = useState(false);
+
+    const { user } = useAuth();
 
     const [opening, setOpening] =
         useState({
@@ -221,7 +224,7 @@ export default function CashPage() {
 
                 opening.observations,
 
-            openedById: 1,
+            openedById: user!.id,
 
         });
 
@@ -242,7 +245,7 @@ export default function CashPage() {
 
                 closing.observations,
 
-            closedById: 1,
+            closedById: user!.id,
 
         });
 

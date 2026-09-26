@@ -1,13 +1,16 @@
 import DataTable from "../../../components/table/DataTable";
+import Chip from "@mui/material/Chip";
 
 interface Props {
   rows: any[];
   onView: (row: any) => void;
+  onCancel?: (row: any) => void;
 }
 
 export default function PurchaseTable({
   rows,
   onView,
+  onCancel,
 }: Props) {
 
   const columns = [
@@ -43,6 +46,18 @@ export default function PurchaseTable({
         `Bs ${Number(row.total).toFixed(2)}`,
     },
 
+    {
+      field: "status",
+      headerName: "Estado",
+      render: (row: any) => (
+        <Chip
+          label={row.status === "CANCELLED" ? "Anulada" : "Activa"}
+          color={row.status === "CANCELLED" ? "default" : "success"}
+          size="small"
+        />
+      ),
+    },
+
   ];
 
   return (
@@ -51,6 +66,7 @@ export default function PurchaseTable({
       columns={columns}
       rows={rows}
       onView={onView}
+      onCancel={onCancel}
     />
 
   );

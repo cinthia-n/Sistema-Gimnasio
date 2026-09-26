@@ -72,7 +72,7 @@ export class ReportsService {
             where: {
 
                 saleDate: this.getDateFilter(from, to),
-
+                status: { not: 'CANCELLED' },
             },
 
             include: {
@@ -241,6 +241,7 @@ export class ReportsService {
             where: {
 
                 createdAt: this.getDateFilter(from, to),
+                status: { not: 'CANCELLED' },
             },
 
             include: {

@@ -1,145 +1,71 @@
-import { PrismaClient, UserRole, ServiceType } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
 
-  console.log("Entro al seed");
+  console.log("Ejecutando seed...");
+
+  //--------------------------------------------------
+  // Usuario ADMIN (dueño)
+  //--------------------------------------------------
+
   const adminExists = await prisma.user.findUnique({
-    where: {
-      username: 'admin',
-    },
+    where: { username: 'eduin' },
   });
 
   if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('Admin123*', 10);
+
+    const hashedPassword = await bcrypt.hash('CambiarAhora123*', 10);
 
     await prisma.user.create({
       data: {
-        username: 'admin',
-        fullName: 'Propietario',
+        username: 'eduin',
+        fullName: 'Eduin',
         password: hashedPassword,
         role: UserRole.ADMIN,
+        mustChangePassword: true,
       },
     });
 
-    console.log('Administrador creado');
+    console.log('Administrador (Eduin) creado');
+
   } else {
     console.log('Administrador ya existe');
   }
 
-  const employeeExists = await prisma.user.findUnique({
-    where: {
-      username: 'vendedora1',
-    },
-  });
+  //--------------------------------------------------
+  // Cuentas de empleadas (en blanco, se personalizan
+  // al primer inicio de sesión)
+  //--------------------------------------------------
 
-  if (!employeeExists) {
-    const hashedPassword = await bcrypt.hash(
-      'Vendedora123*',
-      10,
-    );
+  const employeeUsernames = ['recepcion1', 'recepcion2'];
 
-  await prisma.user.create({
-    data: {
-      username: 'vendedora1',
-      fullName: 'Vendedora 1',
-      password: hashedPassword,
-      role: UserRole.EMPLOYEE,
-    },
-  });
+  for (const username of employeeUsernames) {
 
-  console.log('Vendedora creada');
-} else {
-  console.log('Vendedora ya existe');
-}
-
-const services = [
-
-  {
-    code: 'MONTHLY',
-    name: 'Mensual',
-    type: ServiceType.MEMBERSHIP,
-    durationDays: 30,
-    basePrice: 100,
-  },
-
-  {
-    code: 'GROUP',
-    name: 'Grupal',
-    type: ServiceType.MEMBERSHIP,
-    durationDays: 30,
-    basePrice: 90,
-  },
-
-  {
-    code: 'ALTERNATE',
-    name: 'Día por medio',
-    type: ServiceType.MEMBERSHIP,
-    durationDays: 30,
-    basePrice: 80,
-  },
-
-  {
-    code: 'SESSION',
-    name: 'Diario',
-    type: ServiceType.MEMBERSHIP,
-    durationDays: 1,
-    basePrice: 10,
-  },
-
-  {
-    code: 'THREE_MONTHS',
-    name: 'Cambio corporal 3 meses',
-    type: ServiceType.PROGRAM,
-    durationDays: 90,
-    basePrice: 350,
-  },
-
-  {
-    code: 'NUTRITION',
-    name: 'Asesoría nutricional',
-    type: ServiceType.ADDITIONAL,
-    durationDays: 30,
-    basePrice: 50,
-  },
-
-  {
-    code: 'PERSONAL',
-    name: 'Asesoría personalizada',
-    type: ServiceType.ADDITIONAL,
-    durationDays: 30,
-    basePrice: 50,
-  },
-
-];
-
-for (const service of services) {
-
-  const exists = await prisma.service.findUnique({
-
-    where: {
-
-      code: service.code,
-
-    },
-
-  });
-
-  if (!exists) {
-
-    await prisma.service.create({
-
-      data: service,
-
+    const exists = await prisma.user.findUnique({
+      where: { username },
     });
 
-    console.log(`${service.name} creado`);
+    if (!exists) {
 
+      const hashedPassword = await bcrypt.hash('CambiarAhora123*', 10);
+
+      await prisma.user.create({
+        data: {
+          username,
+          fullName: 'Nueva empleada',
+          password: hashedPassword,
+          role: UserRole.EMPLOYEE,
+          mustChangePassword: true,
+        },
+      });
+
+      console.log(`Cuenta ${username} creada`);
+    }
   }
 
-}
 }
 
 main()

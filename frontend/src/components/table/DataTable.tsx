@@ -14,7 +14,7 @@ import {
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-
+import CancelIcon from "@mui/icons-material/Cancel";
 export interface Column {
   field: string;
   headerName: string;
@@ -30,6 +30,7 @@ interface Props {
   onView?: (row: any) => void;
   onEdit?: (row: any) => void;
   onDelete?: (row: any) => void;
+  onCancel?: (row: any) => void;
 }
 
 export default function DataTable({
@@ -38,6 +39,7 @@ export default function DataTable({
   onView,
   onEdit,
   onDelete,
+  onCancel,
 }: Props) {
   return (
     <Paper elevation={3}>
@@ -57,7 +59,7 @@ export default function DataTable({
                 </TableCell>
               ))}
 
-              {(onView || onEdit || onDelete) && (
+              {(onView || onEdit || onDelete || onCancel) && (
                 <TableCell
                   align="center"
                   sx={{
@@ -105,7 +107,7 @@ export default function DataTable({
                   </TableCell>
                 ))}
 
-                {(onView || onEdit || onDelete) && (
+                {(onView || onEdit || onDelete || onCancel) && (
                   <TableCell align="center">
                     {onView && (
                       <IconButton
@@ -140,9 +142,22 @@ export default function DataTable({
                           e.preventDefault();
                           e.stopPropagation();
                           onDelete(row);
-                        }}
+                        }}                      
                       >
                         <DeleteIcon />
+                      </IconButton>
+                    )}
+
+                    {onCancel && (
+                      <IconButton
+                        color="warning"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onCancel(row);
+                        }}
+                      >
+                        <CancelIcon />
                       </IconButton>
                     )}
                   </TableCell>

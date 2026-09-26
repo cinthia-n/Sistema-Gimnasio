@@ -3,11 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterMembershipDto } from './dto/register-membership.dto';
 import { FinancialService } from '../financial/financial.service';
 import { Service } from '@prisma/client';
+import { CashService } from '../cash/cash.service';
+import { isSameDay } from '../../common/date.util';
+import { ForbiddenException } from '@nestjs/common';
 @Injectable()
 export class MembershipsService {
     constructor(
     private readonly prisma: PrismaService,
     private readonly financialService: FinancialService,
+    private readonly cashService: CashService,
   ) {}
 
   
@@ -183,25 +187,9 @@ async register(dto: RegisterMembershipDto) {
 
       if (dto.isStudent) {
 
-        // Solo Mensual y Grupal tienen
-        // tarifa diferenciada para estudiantes.
-
-        if (
-          service.code !== 'MONTHLY' &&
-          service.code !== 'GROUP'
-        ) {
-          throw new BadRequestException(
-            'Este servicio no tiene tarifa para estudiantes',
-          );
-        }
-
-        const studentPrice =
-          await tx.servicePrice.findFirst({
-           where: {
-              serviceId: service.id,
-              isStudent: true,
-            },
-          });
+        const studentPrice = await tx.servicePrice.findFirst({
+          where: { serviceId: service.id, isStudent: true },
+        });
 
         if (!studentPrice) {
           throw new BadRequestException(
@@ -209,9 +197,7 @@ async register(dto: RegisterMembershipDto) {
           );
         }
 
-        basePrice = Number(
-          studentPrice.price,
-        );
+        basePrice = Number(studentPrice.price);
 
       } else {
 
@@ -227,14 +213,16 @@ async register(dto: RegisterMembershipDto) {
         service.durationDays;
     }
 
-    const paidAmount =
-      dto.paymentAmount;
+    if (!dto.payments?.length) {
+    throw new BadRequestException('Debe registrar al menos un pago');
+    }
 
-    const balanceDue =
-      this.calculateBalance(
-        finalPrice,
-        paidAmount,
-      );
+    const paidAmount = dto.payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+
+    const balanceDue = this.calculateBalance(finalPrice, paidAmount);
     //--------------------------------------------------
     // 5. Crear código
     //--------------------------------------------------
@@ -297,35 +285,27 @@ async register(dto: RegisterMembershipDto) {
     // 8. Registrar primer pago
     //--------------------------------------------------
 
-    const payment = await tx.payment.create({
+    for (const paymentLine of dto.payments) {
 
-      data: {
+      const payment = await tx.payment.create({
+        data: {
+            clientServiceId: enrollment.id,
+            userId: dto.userId,
+            amount: paymentLine.amount,
+            paymentMethod: paymentLine.paymentMethod,
+            reference: paymentLine.reference,
+        },
+      });
 
-        clientServiceId: enrollment.id,
-
-        userId: dto.userId,
-
-        amount: paidAmount,
-
-        paymentMethod: dto.paymentMethod,
-
-        reference: dto.paymentReference,
-
-      },
-
-    });
-
-    await this.financialService.registerMembershipPayment(
-      {
+      await this.financialService.registerMembershipPayment({
         membershipCode: enrollment.membershipCode,
         amount: Number(payment.amount),
         paymentMethod: payment.paymentMethod,
         paymentId: payment.id,
         userId: payment.userId,
-      },
-      tx,
-    );
+      }, tx);
 
+    }
     //--------------------------------------------------
     // 9. Retornar inscripción completa
     //--------------------------------------------------
@@ -368,5 +348,78 @@ async findAll(){
       id: 'desc',
     },
   });
+}
+
+async cancel(id: number, cancelledById: number, cancelledByRole: string, reason: string) {
+
+    if (!reason?.trim()) {
+        throw new BadRequestException('Debe indicar el motivo de la anulación');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+
+        const enrollment = await tx.clientService.findUnique({
+            where: { id },
+            include: { payments: true },
+        });
+
+        if (!enrollment) {
+            throw new NotFoundException('Inscripción no encontrada');
+        }
+
+        if (enrollment.status === 'CANCELLED') {
+            throw new BadRequestException('Esta inscripción ya fue anulada');
+        }
+
+        if (cancelledByRole !== 'ADMIN') {
+
+            const registeredByEmployee = enrollment.payments.some(
+                p => p.userId === cancelledById,
+            );
+
+            if (!registeredByEmployee) {
+                throw new ForbiddenException(
+                    'Solo puede anular inscripciones que usted registró, o contactar al administrador',
+                );
+            }
+
+            if (!isSameDay(enrollment.createdAt)) {
+                throw new ForbiddenException(
+                    'Solo puede anular inscripciones del día de hoy, o contactar al administrador',
+                );
+            }
+        }
+
+        for (const payment of enrollment.payments) {
+
+            await this.cashService.registerExpense({
+                concept: `Anulación Inscripción ${enrollment.membershipCode} - ${reason}`,
+                amount: Number(payment.amount),
+                paymentMethod: payment.paymentMethod,
+                referenceType: 'MEMBERSHIP_PAYMENT_REVERSAL',
+                referenceId: enrollment.id,
+                createdById: cancelledById,
+            }, tx);
+
+        }
+
+        return tx.clientService.update({
+            where: { id },
+            data: {
+                status: 'CANCELLED',
+                cancelReason: reason,
+                cancelledById,
+                cancelledAt: new Date(),
+            },
+            include: {
+                client: true,
+                service: true,
+                promotion: true,
+                payments: true,
+            },
+        });
+
+    });
+
 }
 }

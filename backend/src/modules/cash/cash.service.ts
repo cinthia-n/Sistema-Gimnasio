@@ -220,135 +220,68 @@ export class CashService {
   async getCurrentCashSummary() {
 
     const cash = await this.prisma.cashClosing.findFirst({
-
-      where: {
-        status: "OPEN",
-      },
-
+        where: { status: "OPEN" },
     });
 
     if (!cash) {
-
-      throw new BadRequestException("No existe una caja abierta.");
+        throw new BadRequestException("No existe una caja abierta.");
     }
 
-    const movements =
-      await this.prisma.cashMovement.findMany({
-
-        where: {
-
-        movementDate: {
-
-            gte: cash.openingDate,
-
-          },
-
-        },
-
+    const movements = await this.prisma.cashMovement.findMany({
+        where: { movementDate: { gte: cash.openingDate } },
     });
 
-  console.log("================================");
-  console.log("Fecha apertura:", cash.openingDate);
-  console.log("Cantidad movimientos:", movements.length);
-  console.log("Movimientos:", movements);
-  console.log("================================");
+    const sumBy = (type: string, referenceType: string, method: string) =>
+        movements
+            .filter(m => m.type === type && m.referenceType === referenceType && m.paymentMethod === method)
+            .reduce((sum, m) => sum + Number(m.amount), 0);
 
+    const membershipCashGross = sumBy("INCOME", "MEMBERSHIP_PAYMENT", "CASH");
+    const membershipQrGross = sumBy("INCOME", "MEMBERSHIP_PAYMENT", "QR");
+    const salesCashGross = sumBy("INCOME", "PRODUCT_SALE", "CASH");
+    const salesQrGross = sumBy("INCOME", "PRODUCT_SALE", "QR");
 
-  const membershipCash =
-    movements
+    const salesCashReversals = sumBy("EXPENSE", "PRODUCT_SALE_REVERSAL", "CASH");
+    const salesQrReversals = sumBy("EXPENSE", "PRODUCT_SALE_REVERSAL", "QR");
+
+    const membershipCashReversals = sumBy("EXPENSE", "MEMBERSHIP_PAYMENT_REVERSAL", "CASH");
+    const membershipQrReversals = sumBy("EXPENSE", "MEMBERSHIP_PAYMENT_REVERSAL", "QR");
+
+    const membershipCash = membershipCashGross - membershipCashReversals;
+    const membershipQr = membershipQrGross - membershipQrReversals;
+
+    const salesCash = salesCashGross - salesCashReversals;
+    const salesQr = salesQrGross - salesQrReversals;
+
+    const grossExpenses = movements
       .filter(m =>
-        m.type === "INCOME" &&
-        m.referenceType === "MEMBERSHIP_PAYMENT" &&
-        m.paymentMethod === "CASH",
+          m.type === "EXPENSE" &&
+          m.paymentMethod === "CASH" &&
+          m.referenceType !== "PRODUCT_SALE_REVERSAL" &&
+          m.referenceType !== "MEMBERSHIP_PAYMENT_REVERSAL",
       )
-      .reduce(
-        (sum, m) => sum + Number(m.amount),
-        0,
-      );
+      .reduce((sum, m) => sum + Number(m.amount), 0);
 
-  const membershipQr =
-    movements
-      .filter(m =>
-        m.type === "INCOME" &&
-        m.referenceType === "MEMBERSHIP_PAYMENT" &&
-        m.paymentMethod === "QR",
-      )
-      .reduce(
-        (sum, m) => sum + Number(m.amount),
-        0,
-      );
+    const purchaseReversalsCash = sumBy("INCOME", "PURCHASE_REVERSAL", "CASH");
 
-  const salesCash =
-    movements
-      .filter(m =>
-        m.type === "INCOME" &&
-        m.referenceType === "PRODUCT_SALE" &&
-        m.paymentMethod === "CASH",
-      )
-      .reduce(
-        (sum, m) => sum + Number(m.amount),
-        0,
-      );
+    const expenses = grossExpenses - purchaseReversalsCash;
+    const totalCashIncome = membershipCash + salesCash;
+    const totalQrIncome = membershipQr + salesQr;
 
-  const salesQr =
-    movements
-      .filter(m =>
-        m.type === "INCOME" &&
-        m.referenceType === "PRODUCT_SALE" &&
-        m.paymentMethod === "QR",
-      )
-      .reduce(
-        (sum, m) => sum + Number(m.amount),
-        0,
-      );
-
-  const expenses =
-    movements
-      .filter(m =>
-        m.type === "EXPENSE",
-      )
-      .reduce(
-        (sum, m) => sum + Number(m.amount),
-        0,
-      );
-
-  const totalCashIncome =
-    membershipCash + salesCash;
-
-  const totalQrIncome =
-    membershipQr + salesQr;
-
-  const expectedCash =
-    Number(cash.openingCash) +
-    totalCashIncome -
-    expenses;
-
-  return {
-
-    openingCash:
-      Number(cash.openingCash),
-
-    membershipCash,
-
-    membershipQr,
-
-    salesCash,
-
-    salesQr,
-
-    totalCashIncome,
-
-    totalQrIncome,
-
-    expenses,
-
-    expectedCash,
-
-    openingDate:
-      cash.openingDate,
-
-  };
-
+    const expectedCash =        
+      Number(cash.openingCash) + totalCashIncome - expenses;
+    return {
+        openingCash: Number(cash.openingCash),
+        membershipCash,
+        membershipQr,
+        salesCash,
+        salesQr,
+        totalCashIncome,
+        totalQrIncome,
+        expenses,
+        expectedCash,
+        openingDate: cash.openingDate,
+    };
 }
 
   async findAll() {

@@ -81,56 +81,54 @@ export class AuthService {
     userId: number,
     dto: ChangePasswordDto,
   ) {
-    if(!userId){
-      throw new UnauthorizedException(
-        'Nose pudo identificar al usuario autenticado'
-      );
+    if (!userId) {
+        throw new UnauthorizedException(
+            'No se pudo identificar al usuario autenticado',
+        );
     }
+
     const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+        where: { id: userId },
     });
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Usuario no encontrado',
-      );
+        throw new UnauthorizedException('Usuario no encontrado');
     }
 
     const passwordMatch = await bcrypt.compare(
-      dto.currentPassword,
-      user.password,
+        dto.currentPassword,
+        user.password,
     );
 
     if (!passwordMatch) {
-      throw new UnauthorizedException(
-        'La contraseña actual es incorrecta',
-      );
+        throw new UnauthorizedException('La contraseña actual es incorrecta');
     }
 
     if (dto.currentPassword === dto.newPassword) {
-      throw new BadRequestException(
-        'La nueva contraseña debe ser diferente',
-      );
+        throw new BadRequestException('La nueva contraseña debe ser diferente');
     }
 
-    const newPasswordHash = await bcrypt.hash(
-      dto.newPassword,
-      10,
-    );
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
 
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        password: newPasswordHash,
-      },
+    const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+            password: newPasswordHash,
+            mustChangePassword: false,
+            ...(dto.fullName ? { fullName: dto.fullName } : {}),
+        },
     });
 
     return {
-      message: 'Contraseña actualizada correctamente',
+        message: 'Contraseña actualizada correctamente',
+        user: {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            fullName: updatedUser.fullName,
+            role: updatedUser.role,
+            isActive: updatedUser.isActive,
+            mustChangePassword: updatedUser.mustChangePassword,
+        },
     };
   }
 }

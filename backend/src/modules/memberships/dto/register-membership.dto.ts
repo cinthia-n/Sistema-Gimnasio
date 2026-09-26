@@ -1,28 +1,23 @@
 export class RegisterMembershipDto {
 
   existingClient!: boolean;
-
   clientId?: number;
 
   client?: {
     fullName: string;
     ci: string;
     phone: string;
-    
   };
 
   serviceId!: number;
-
   promotionId?: number;
-
   isStudent!: boolean;
 
-  paymentMethod!: 'CASH' | 'QR';
-
-  paymentAmount!: number;
+  payments!: {
+    paymentMethod: 'CASH' | 'QR';
+    amount: number;
+    reference?: string;
+  }[];
 
   userId!: number;
-
-  paymentReference?: string;
-
 }

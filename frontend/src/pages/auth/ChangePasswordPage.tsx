@@ -13,49 +13,34 @@ import api from "../../api/axios";
 import { useAuth } from "./AuthContext";
 
 export default function ChangePasswordPage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
-  const [currentPassword, setCurrentPassword] =
-    useState("");
+  const [fullName, setFullName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [newPassword, setNewPassword] =
-    useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const handleSubmit = async (
-    e: React.FormEvent,
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setError("");
 
     if (!currentPassword || !newPassword) {
-      setError(
-        "Todos los campos son obligatorios",
-      );
+      setError("Todos los campos son obligatorios");
       return;
     }
 
     if (newPassword.length < 6) {
-      setError(
-        "La nueva contraseña debe tener al menos 6 caracteres",
-      );
+      setError("La nueva contraseña debe tener al menos 6 caracteres");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError(
-        "Las contraseñas nuevas no coinciden",
-      );
+      setError("Las contraseñas nuevas no coinciden");
       return;
     }
 
@@ -67,35 +52,22 @@ export default function ChangePasswordPage() {
     try {
       setLoading(true);
 
-      await api.patch(
-        `/auth/change-password/${user.id}`,
+      const { data } = await api.patch(
+        "/auth/password",
         {
           currentPassword,
           newPassword,
+          fullName: fullName.trim() || undefined,
         },
       );
 
-      /*
-       * El cambio fue exitoso.
-       *
-       * Actualizamos el usuario almacenado
-       * para que el frontend deje de considerar
-       * que debe cambiar la contraseña.
-       */
+      const token = localStorage.getItem("edra_token");
 
-      const updatedUser = {
-        ...user,
-        mustChangePassword: false,
-      };
+      if (token) {
+        login(token, data.user);
+      }
 
-      localStorage.setItem(
-        "edra_user",
-        JSON.stringify(updatedUser),
-      );
-
-      navigate("/inicio", {
-        replace: true,
-      });
+      navigate("/dashboard", { replace: true });
 
     } catch (err: any) {
       setError(
@@ -123,8 +95,8 @@ export default function ChangePasswordPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Por seguridad, debes cambiar tu contraseña
-        antes de continuar.
+        Por seguridad, debes cambiar tu contraseña antes de continuar.
+        También puedes indicar tu nombre o alias.
       </Typography>
 
       {error && (
@@ -135,14 +107,21 @@ export default function ChangePasswordPage() {
 
       <form onSubmit={handleSubmit}>
         <Stack spacing={2}>
+
+          <TextField
+            label="Tu nombre o alias"
+            fullWidth
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            helperText="Así te identificarás en el sistema (opcional)"
+          />
+
           <TextField
             label="Contraseña actual"
             type="password"
             fullWidth
             value={currentPassword}
-            onChange={(e) =>
-              setCurrentPassword(e.target.value)
-            }
+            onChange={(e) => setCurrentPassword(e.target.value)}
           />
 
           <TextField
@@ -150,9 +129,7 @@ export default function ChangePasswordPage() {
             type="password"
             fullWidth
             value={newPassword}
-            onChange={(e) =>
-              setNewPassword(e.target.value)
-            }
+            onChange={(e) => setNewPassword(e.target.value)}
           />
 
           <TextField
@@ -160,9 +137,7 @@ export default function ChangePasswordPage() {
             type="password"
             fullWidth
             value={confirmPassword}
-            onChange={(e) =>
-              setConfirmPassword(e.target.value)
-            }
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
           <Button
@@ -170,10 +145,9 @@ export default function ChangePasswordPage() {
             variant="contained"
             disabled={loading}
           >
-            {loading
-              ? "Actualizando..."
-              : "Cambiar contraseña"}
+            {loading ? "Actualizando..." : "Cambiar contraseña"}
           </Button>
+
         </Stack>
       </form>
     </Stack>

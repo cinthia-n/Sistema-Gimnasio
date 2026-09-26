@@ -17,4 +17,9 @@ export const purchaseService = {
     return data;
   },
 
+  cancel: async (id: number, reason: string) => {
+    const { data } = await api.patch(`/purchases/${id}/cancel`, { reason });
+    return data;
+  },
+
 };

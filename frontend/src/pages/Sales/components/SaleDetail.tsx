@@ -58,13 +58,16 @@ export default function SaleDetail({
 
             </Typography>
 
-            <Typography>
-
-                Forma de pago:
-
-                {sale.paymentMethod}
-
+            <Typography variant="subtitle2" mt={1}>
+                Pagos:
             </Typography>
+
+            {sale.payments?.map((p: any) => (
+                <Typography key={p.id}>
+                    {p.paymentMethod === "CASH" ? "Efectivo" : "QR"}: Bs {Number(p.amount).toFixed(2)}
+                    {p.reference ? ` (Ref: ${p.reference})` : ""}
+                </Typography>
+            ))}
 
             <Divider sx={{ my: 2 }} />
 

@@ -2,10 +2,14 @@ export class CreateSaleDto {
   userId!: number;
   clientId?: number;
 
-  paymentMethod!: 'CASH' | 'QR';
-
   items!: {
     productId: number;
     quantity: number;
+  }[];
+
+  payments!: {
+    paymentMethod: 'CASH' | 'QR';
+    amount: number;
+    reference?: string;
   }[];
 }

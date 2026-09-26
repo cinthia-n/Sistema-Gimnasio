@@ -35,3 +35,8 @@ export async function getSale(
 
 }
 
+export async function cancelSale(id: number, reason: string) {
+    const { data } = await api.patch(`/sales/${id}/cancel`, { reason });
+    return data;
+}
+

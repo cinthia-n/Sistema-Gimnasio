@@ -23,11 +23,17 @@ import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 
 import { toast } from "react-toastify";
+import PaymentLinesInput from "../../../components/common/PaymentLinesInput";
+import type { PaymentLine } from "../../../components/common/PaymentLinesInput";
+import { useAuth } from "../../../pages/auth/AuthContext";
 
 export interface SaleFormRef {
-    submit: () => { userId: number; paymentMethod: "CASH" | "QR"; items: { productId: number; quantity: number }[] } | null;
+    submit: () => {
+        userId: number;
+        items: { productId: number; quantity: number }[];
+        payments: { paymentMethod: "CASH" | "QR"; amount: number; reference?: string }[];
+    } | null;
 }
-
 // --------------------------------------------------
 // Obtiene el precio correcto según la cantidad,
 // igual que hace el backend en SalesService.
@@ -57,11 +63,13 @@ const SaleForm = forwardRef<SaleFormRef, {}>((props, ref) => {
         isLoading,
     } = useAvailableProducts();
 
+    const { user } = useAuth();
+
     const [items, setItems] = useState<any[]>([]);
 
-    const [paymentMethod, setPaymentMethod] =
-        useState<"CASH" | "QR">("CASH");
-
+    const [payments, setPayments] = useState<PaymentLine[]>([
+        { paymentMethod: "CASH", amount: "" },
+    ]);
     const addProduct = (product: any) => {
 
         const existing = items.find(
@@ -148,12 +156,23 @@ const SaleForm = forwardRef<SaleFormRef, {}>((props, ref) => {
                 return null;
             }
 
+            const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+            if (Math.abs(totalPaid - total) > 0.01) {
+                toast.error("El monto pagado no coincide con el total de la venta");
+                return null;
+            }
+
             return {
-                userId: 1,
-                paymentMethod,
+                userId: user!.id,
                 items: items.map(i => ({
                     productId: i.productId,
                     quantity: i.quantity,
+                })),
+                payments: payments.map(p => ({
+                    paymentMethod: p.paymentMethod,
+                    amount: Number(p.amount),
+                    reference: p.reference,
                 })),
             };
         },
@@ -245,16 +264,11 @@ const SaleForm = forwardRef<SaleFormRef, {}>((props, ref) => {
                     Forma de pago
                 </InputLabel>
 
-                <Select
-                    value={paymentMethod}
-                    label="Forma de pago"
-                    onChange={(e) =>
-                        setPaymentMethod(e.target.value as "CASH" | "QR")
-                    }
-                >
-                    <MenuItem value="CASH">Efectivo</MenuItem>
-                    <MenuItem value="QR">QR</MenuItem>
-                </Select>
+                <PaymentLinesInput
+                    lines={payments}
+                    onChange={setPayments}
+                    total={total}
+                />
 
             </FormControl>
         </>

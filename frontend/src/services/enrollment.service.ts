@@ -18,9 +18,11 @@ export interface RegisterEnrollmentDto {
 
     promotionId?: number;
 
-    paymentMethod: 'CASH' | 'QR';
-
-    paymentAmount: number;
+    payments: {
+        paymentMethod: 'CASH' | 'QR';
+        amount: number;
+        reference?: string;
+    }[];
 
     userId: number;
 
@@ -53,5 +55,10 @@ export async function getEnrollmentByCode(
         `/memberships/code/${code}`,
     );
 
+    return data;
+}
+
+export async function cancelEnrollment(id: number, reason: string) {
+    const { data } = await api.patch(`/memberships/${id}/cancel`, { reason });
     return data;
 }

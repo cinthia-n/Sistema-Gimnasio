@@ -1,15 +1,12 @@
-import { PaymentMethod } from '@prisma/client';
-
 export class RegisterPaymentDto {
 
-    clientServiceId!: number;
+  clientServiceId!: number;
+  userId!: number;
 
-    amount!: number;
-
-    paymentMethod!: PaymentMethod;
-
-    userId!: number;
-
+  payments!: {
+    paymentMethod: 'CASH' | 'QR';
+    amount: number;
     reference?: string;
+  }[];
 
 }

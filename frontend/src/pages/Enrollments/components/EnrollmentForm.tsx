@@ -25,6 +25,8 @@ import { getServices } from '../../../services/service.service';
 import { getServicePrices } from '../../../services/service-price.service';
 import { getPromotions } from '../../../services/promotion.service';
 import { useAuth } from '../../auth/AuthContext';
+import PaymentLinesInput from '../../../components/common/PaymentLinesInput';
+import type { PaymentLine } from '../../../components/common/PaymentLinesInput';
 
 import type { RegisterEnrollmentDto } from '../../../services/enrollment.service';
 
@@ -57,6 +59,7 @@ const EnrollmentForm = forwardRef<
     // CLIENTE
     // --------------------------------------------------
 
+    const { user } = useAuth();
     const [existingClient, setExistingClient] = useState(true);
 
     const [clientId, setClientId] =
@@ -89,11 +92,9 @@ const EnrollmentForm = forwardRef<
     // PAGO
     // --------------------------------------------------
 
-    const [paymentMethod, setPaymentMethod] =
-        useState<'CASH' | 'QR'>('CASH');
-
-    const [paymentAmount, setPaymentAmount] =
-        useState('');
+    const [payments, setPayments] = useState<PaymentLine[]>([
+        { paymentMethod: 'CASH', amount: '' },
+    ]);
 
     // --------------------------------------------------
     // CLIENTES
@@ -159,10 +160,11 @@ const EnrollmentForm = forwardRef<
                     item.isStudent === true,
             )
             : undefined;
+    const hasStudentPrice = Boolean(studentServicePrice);
 
-    const hasStudentPrice =
+    /*const hasStudentPrice =
         selectedService?.code === 'MONTHLY' ||
-        selectedService?.code === 'GROUP';
+        selectedService?.code === 'GROUP';*/
 
     // --------------------------------------------------
     // PRECIO DEL PLAN
@@ -243,8 +245,10 @@ const EnrollmentForm = forwardRef<
     // PAGO Y SALDO
     // --------------------------------------------------
 
-    const paid =
-        Number(paymentAmount) || 0;
+    const paid = payments.reduce(
+        (sum, p) => sum + (Number(p.amount) || 0),
+        0,
+    );
 
     const balance =
         Math.max(total - paid, 0);
@@ -307,11 +311,17 @@ const EnrollmentForm = forwardRef<
             }
 
             // Pago
-            if (!paymentAmount) {
+            // Pago
+            if (paid <= 0) {
 
-                alert(
-                    'Ingrese el monto pagado',
-                );
+                alert('Ingrese el monto pagado');
+
+                return null;
+            }
+
+            if (paid > total) {
+
+                alert('El monto pagado no puede ser mayor al total');
 
                 return null;
             }
@@ -354,12 +364,13 @@ const EnrollmentForm = forwardRef<
                         ? Number(promotionId)
                         : undefined,
 
-                paymentMethod,
+                payments: payments.map(p => ({
+                    paymentMethod: p.paymentMethod,
+                    amount: Number(p.amount),
+                    reference: p.reference,
+                })),
 
-                paymentAmount:
-                    Number(paymentAmount),
-
-                userId: 1,
+                userId: user!.id,
             };
         },
     }));
@@ -555,19 +566,16 @@ const EnrollmentForm = forwardRef<
 
                 <Divider sx={{ mb: 2 }} />
 
-                <PaymentSection
-                    paymentMethod={paymentMethod}
-                    paymentAmount={paymentAmount}
-                    balance={balance}
-                    onPaymentMethodChange={(value) =>
-                        setPaymentMethod(
-                            value as 'CASH' | 'QR',
-                        )
-                    }
-                    onPaymentAmountChange={
-                        setPaymentAmount
-                    }
+                <PaymentLinesInput
+                    lines={payments}
+                    onChange={setPayments}
+                    total={total}
+                    requireExactMatch={false}
                 />
+
+                <Typography mt={2} color="text.secondary">
+                    Saldo restante: Bs {balance.toFixed(2)}
+                </Typography>
 
             </Box>
 
