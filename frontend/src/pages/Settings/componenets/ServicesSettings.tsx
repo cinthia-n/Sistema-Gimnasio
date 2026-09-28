@@ -22,15 +22,6 @@ export default function ServicesSettings() {
     const [editingId, setEditingId] =
         useState<number | null>(null);
 
-    interface ServiceFormState {
-        code: string;
-        name: string;
-        description: string;
-        type: string;
-        durationDays: number;
-        basePrice: number;
-    }
-
     const [service, setService] = useState({
 
         code: "",
@@ -89,21 +80,20 @@ export default function ServicesSettings() {
 
     const handleSave = async () => {
     try {
-        let savedService;
-
+        
         if (editingId) {
-            savedService = await updateService.mutateAsync({
-            id: editingId,
-            dto: {
-                name: service.name,
-                description: service.description,
-                type: service.type,
-                durationDays: service.durationDays,
-                basePrice: Number(service.basePrice),
-            },
-        });
+            await updateService.mutateAsync({
+                id: editingId,
+                dto: {
+                    name: service.name,
+                    description: service.description,
+                    type: service.type,
+                    durationDays: service.durationDays,
+                    basePrice: Number(service.basePrice),
+                },
+            });
         } else {
-            savedService = await createService.mutateAsync({
+            await createService.mutateAsync({
                 name: service.name,
                 description: service.description,
                 type: service.type,

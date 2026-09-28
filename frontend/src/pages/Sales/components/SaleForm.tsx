@@ -8,8 +8,7 @@ import {
     Divider,
     FormControl,
     InputLabel,
-    Select,
-    MenuItem,
+    
 } from "@mui/material";
 
 import { useAvailableProducts } from "../../../hooks/useAvailableProducts";
@@ -56,7 +55,7 @@ function getUnitPrice(product: any, quantity: number) {
     return selected ? Number(selected.price) : 0;
 }
 
-const SaleForm = forwardRef<SaleFormRef, {}>((props, ref) => {
+const SaleForm = forwardRef<SaleFormRef, {}>((_props, ref) => {
 
     const {
         data: products = [],

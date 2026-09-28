@@ -110,34 +110,6 @@ export default function CashPage() {
 
     const closeCash = useCloseCash();
 
-    const income = data
-
-        .filter((m: any) => m.type === "INCOME")
-
-        .reduce(
-
-            (sum: number, m: any) =>
-
-                sum + Number(m.amount),
-
-            0,
-
-        );
-
-    const expense = data
-
-        .filter((m: any) => m.type === "EXPENSE")
-
-        .reduce(
-
-            (sum: number, m: any) =>
-
-                sum + Number(m.amount),
-
-            0,
-
-        );
-
     const rows = data.map((m: any) => ({
 
         movementDate:

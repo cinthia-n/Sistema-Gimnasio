@@ -17,8 +17,6 @@ import ExistingClient from './ExistingClient';
 import NewClient from './NewClient';
 import PlanSection from './PlanSection';
 import SummarySection from './SummarySection';
-import PaymentSection from './PaymentSection';
-
 import { useClients } from '../../../hooks/useClients';
 
 import { getServices } from '../../../services/service.service';
@@ -53,7 +51,7 @@ interface Promotion {
 const EnrollmentForm = forwardRef<
     EnrollmentFormRef,
     {}
->((props, ref) => {
+>((_props, ref) => {
 
     // --------------------------------------------------
     // CLIENTE

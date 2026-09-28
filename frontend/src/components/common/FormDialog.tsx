@@ -25,8 +25,7 @@ export default function FormDialog({
   open,
   title,
   onClose,
-  onSave,
-  loading = false,
+  onSave,  
   hideSaveButton = false,
   children,
 }: Props) {

@@ -10,7 +10,6 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import CardMembershipIcon from '@mui/icons-material/CardMembership';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
