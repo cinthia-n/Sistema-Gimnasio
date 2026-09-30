@@ -72,6 +72,20 @@ export class ServicesController {
 
   }
 
+    //---------------------------------------
+  // Activar / Desactivar
+  //---------------------------------------
+
+  @Patch(':id/toggle')
+  toggle(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+
+    return this.servicesService.toggle(id);
+
+  }
+
   //---------------------------------------
   // Eliminar (lógico)
   //---------------------------------------
@@ -87,4 +101,6 @@ export class ServicesController {
     return this.servicesService.remove(id);
 
   }
+
+  
 }

@@ -46,3 +46,8 @@ export async function deleteService(id: number) {
 
   return data;
 }
+
+export async function toggleService(id: number) {
+  const { data } = await api.patch(`/services/${id}/toggle`);
+  return data;
+}

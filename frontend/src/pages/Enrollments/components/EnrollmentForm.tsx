@@ -113,6 +113,10 @@ const EnrollmentForm = forwardRef<
         queryFn: getServices,
     });
 
+    const activeServices = services.filter(
+        (service: any) => service.active !== false,
+    );
+
     // --------------------------------------------------
     // PRECIOS DE SERVICIOS
     // --------------------------------------------------
@@ -462,7 +466,7 @@ const EnrollmentForm = forwardRef<
             ================================================== */}
 
             <PlanSection
-                services={services}
+                services={activeServices}
                 serviceId={serviceId}
                 disabled={!!promotionId}
                 onServiceChange={(value) => {

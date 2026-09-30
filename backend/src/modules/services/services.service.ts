@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 import { CreateServiceDto } from './dto/create-service.dto';
 
+import { NotFoundException } from '@nestjs/common';
 @Injectable()
 export class ServicesService {
 
@@ -118,6 +119,25 @@ export class ServicesService {
         active: false,
       },
 
+    });
+
+  }
+
+    async toggle(id: number) {
+
+    const service = await this.prisma.service.findUnique({
+      where: { id },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Servicio no encontrado');
+    }
+
+    return this.prisma.service.update({
+      where: { id },
+      data: {
+        active: !service.active,
+      },
     });
 
   }
